@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TipTap | המעבר הדיגיטלי שלך</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Heebo', sans-serif; background-color: #f1f5f9; }
+        .glass { background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px); }
+        .step-hidden { display: none; }
+        .modal-enter { animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #00b0e9; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- מזהה הכרטיס והקישור שלך -->
+    <script>
+        // *** הדבק כאן את קישור הגוגל סקריפט שלך ***
+        const API_URL = "https://script.google.com/macros/s/AKfycbwEetH73WOCUrLOuNoyUNByH0JAFlxqSdi3UDJJdP5LwV9Z3WXQQDITaHM6hscW89e-/exec";
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const cardId = urlParams.get('id');
+
+        const LOGO_EASYTIP = "https://raw.githubusercontent.com/mc26589/EASYTIP/main/logo%20easytip.jpg";
+        const LOGO_TIPTAP = "https://raw.githubusercontent.com/mc26589/EASYTIP/main/1767290938556.jpg.jpeg";
+        const LOGO_BIT = "https://raw.githubusercontent.com/mc26589/EASYTIP/main/1200px-Bit_logo_2024.svg.png";
+    </script>
+
+    <div id="app-container" class="glass max-w-md w-full rounded-[2.5rem] p-8 text-center shadow-2xl relative border border-white flex flex-col min-h-[400px]">
+        <!-- טוען ראשוני -->
+        <div id="boot-loader" class="flex flex-col items-center justify-center py-20">
+            <div class="loader mb-4"></div>
+            <p class="text-slate-400 font-bold">מתחבר ל-TipTap...</p>
+        </div>
+
+        <!-- התוכן ייטען כאן דינמית -->
+        <div id="content" class="hidden"></div>
+    </div>
+
+    <!-- מודלים (FAQ, Terms, Guide, Stats) - כולם מוסתרים בהתחלה -->
+    <div id="modals-container"></div>
+
+    <script>
+        async function init() {
+            const content = document.getElementById('content');
+            const loader = document.getElementById('boot-loader');
+
+            if (!cardId) {
+                loader.style.display = 'none';
+                content.classList.remove('hidden');
+                content.innerHTML = `<img src="${LOGO_TIPTAP}" class="w-24 h-24 mx-auto mb-6 rounded-2xl shadow-lg"><h1 class="text-xl font-black">נא לסרוק קוד QR תקין מהכרטיס</h1>`;
+                return;
+            }
+
+            try {
+                // בדיקת סטטוס כרטיס מול האקסל
+                const resp = await fetch(`${API_URL}?id=${cardId}&action=getData`);
+                const data = await resp.json();
+                
+                loader.style.display = 'none';
+                content.classList.remove('hidden');
+
+                if (data.status === "ACTIVE") {
+                    renderPaymentPage(data);
+                } else {
+                    renderActivationPage();
+                }
+            } catch (err) {
+                console.error(err);
+                // במקרה של בעיית CORS גלובלית בגרסאות חינמיות, מודיעים למשתמש
+                document.body.innerHTML = `<div class="p-10 text-center font-bold">שגיאת חיבור. נא לוודא שפריסת ה-Web App של גוגל הוגדרה ל-Anyone.</div>`;
+            }
+        }
+
+        // --- תצוגת דף תשלום (ללקוח) ---
+        function renderPaymentPage(data) {
+            const container = document.getElementById('content');
+            const displayName = data.name || "אבי המלך";
+
+            container.innerHTML = `
+                <img src="${LOGO_TIPTAP}" class="w-32 h-32 bg-white rounded-3xl mx-auto mb-4 shadow-2xl border-4 border-white object-cover -mt-16">
+                <h1 class="text-2xl font-black text-slate-800 mb-1 italic">פרגן ל${displayName}!</h1>
+                <p class="text-slate-500 text-sm mb-8 tracking-tight italic">מצמידים ומפרגנים • תשלום מאובטח ב-Bit</p>
+                
+                <button onclick="forceOpenBit('${data.bit}')" 
+                    class="group w-full bg-white border-2 border-[#00b0e9] text-[#00b0e9] p-4 rounded-2xl flex items-center justify-between mb-4 shadow-md active:scale-95 transition-all">
+                    <div class="flex items-center gap-4">
+                        <img src="${LOGO_BIT}" class="w-10 h-10 object-contain">
+                        <span class="text-xl font-bold font-heebo tracking-tighter italic">תשלום ב-bit</span>
+                    </div>
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+
+                ${data.type === 'link' ? `
+                <a href="${data.link}" target="_top" rel="noreferrer" class="w-full bg-orange-500 text-white p-5 rounded-2xl text-lg font-black shadow-lg block active:scale-95 transition-all mt-2 italic">ביקור באתר / קישור 🚀</a>
+                ` : ''}
+
+                <div class="mt-10 bg-green-50 border border-green-100 rounded-xl p-3 flex items-center justify-center gap-3">
+                    <span class="text-green-600 font-bold text-[10px]">🛡️ תשלום מאובטח בחסות המותג TipTap</span>
+                </div>
+                
+                <button onclick="alert('בגרסת ה-API, כנס ישירות לאתר של גוגל לאיפוס')" class="mt-8 text-xs text-blue-500 underline font-bold py-2 px-4 italic">אזור אישי לבעל הכרטיס</button>
+                <div class="mt-4 flex flex-col items-center gap-2"><a href="mailto:TIPTAP2026@GMAIL.COM" class="text-xs font-bold text-slate-300">✉️ צור קשר</a></div>
+            `;
+        }
+
+        // --- תצוגת דף אקטיבציה (לשליח) ---
+        function renderActivationPage() {
+            const container = document.getElementById('content');
+            container.innerHTML = `
+                <img src="${LOGO_TIPTAP}" class="w-32 h-32 bg-white rounded-3xl mx-auto mb-4 shadow-2xl border-4 border-white object-cover -mt-16">
+                <h1 class="text-2xl font-black text-slate-800 italic">הפעלת TipTap</h1>
+                <p class="text-xs text-slate-400 font-bold mb-6">מזהה: #ID-${cardId}</p>
+                <div class="bg-blue-50 p-4 rounded-2xl mb-8 border border-blue-100 text-right">
+                    <p class="text-sm font-bold text-blue-900 mb-1 italic underline text-center italic">המערכת החדשה הגיעה!</p>
+                    <p class="text-xs text-blue-700 leading-relaxed text-center">להפעלה ראשונית ובחירת מסלול, יש לסרוק את הכרטיס ולהשלים את הרישום בממשק הניהול של גוגל.</p>
+                </div>
+                <p class="text-sm text-slate-400 mb-4 italic">ברגע שתשלים את הרישום בביט, האתר הזה יציג את כפתור התשלום שלך בצורה מקצועית.</p>
+                <a href="mailto:TIPTAP2026@GMAIL.COM" class="text-xs font-bold text-blue-300">✉️ תמיכה טכנית</a>
+            `;
+        }
+
+        function forceOpenBit(url) {
+            const cleanUrl = url.trim();
+            const bitLink = cleanUrl.toLowerCase().startsWith("http") ? cleanUrl : "https://" + cleanUrl;
+            var win = window.open(bitLink, '_blank');
+            if(!win || win.closed || typeof win.closed == 'undefined') {
+                window.top.location.href = bitLink;
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
