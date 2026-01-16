@@ -9,10 +9,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Heebo', sans-serif; background-color: #f1f5f9; }
-        .glass { background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px); border: 1px solid white; }
+        .glass { background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px); }
         .modal-enter { animation: slideUp 0.3s ease-out; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #00b0e9; border-radius: 50%; width: 35px; height: 35px; animation: spin 1s linear infinite; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #00b0e9; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         details > summary { list-style: none; outline: none; }
         details > summary::-webkit-details-marker { display: none; }
@@ -22,216 +22,270 @@
 
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbwEetH73WOCUrLOuNoyUNByH0JAFlxqSdi3UDJJdP5LwV9Z3WXQQDITaHM6hscW89e-/exec";
+        const LOGO_TIPTAP = "https://raw.githubusercontent.com/mc26589/EASYTIP/main/1767290938556.jpg.jpeg";
+        const LOGO_BIT = "https://raw.githubusercontent.com/mc26589/EASYTIP/main/1200px-Bit_logo_2024.svg.png";
+        
         const urlParams = new URLSearchParams(window.location.search);
         const cardId = urlParams.get('id');
-        let currentUploadedFile = null;
+        let selectedBitFile = null;
+        let activeMode = 'tip';
     </script>
 
-    <div class="glass max-w-md w-full rounded-[2.5rem] p-8 text-center shadow-2xl relative flex flex-col min-h-[500px]">
-        <!-- Header קבוע -->
-        <img src="https://raw.githubusercontent.com/mc26589/EASYTIP/main/1767290938556.jpg.jpeg" class="w-32 h-32 bg-white rounded-3xl mx-auto -mt-24 mb-4 shadow-xl border-4 border-white object-cover">
-        <h1 class="text-2xl font-black text-slate-800 mb-1 italic tracking-tight uppercase leading-none">TipTap</h1>
-        <p id="ui-card-label" class="text-[10px] text-slate-400 font-bold mb-6 tracking-widest"></p>
-
-        <!-- מסך טעינה -->
-        <div id="loader-view" class="py-20 flex flex-col items-center">
-            <div class="loader mb-4"></div>
-            <p class="text-slate-400 font-bold italic tracking-tighter">מעבד נתונים...</p>
+    <div class="glass max-w-md w-full rounded-[2.5rem] p-8 text-center shadow-2xl relative border border-white flex flex-col min-h-[500px]">
+        
+        <!-- Header קבוע - לא נעלם לעולם -->
+        <div id="static-header">
+            <img src="https://raw.githubusercontent.com/mc26589/EASYTIP/main/1767290938556.jpg.jpeg" 
+                 class="w-32 h-32 bg-white rounded-3xl mx-auto -mt-24 mb-4 shadow-xl border-4 border-white object-cover">
+            <h1 class="text-2xl font-black text-slate-800 mb-1 italic tracking-tight uppercase leading-none">TipTap</h1>
+            <p id="ui-card-id" class="text-[10px] text-slate-400 font-bold mb-6 tracking-widest uppercase"></p>
         </div>
 
-        <!-- הודעת הצלחה באיפוס -->
+        <!-- הודעת הצלחה/איפוס -->
         <div id="reset-success" class="hidden mb-4 p-3 bg-green-100 text-green-700 rounded-xl font-bold text-sm">✅ הכרטיס אופס בהצלחה!</div>
 
-        <!-- תוכן מתחלף -->
-        <div id="app-view" class="hidden flex-grow flex flex-col"></div>
-
-        <!-- פוטר (יופיע תמיד) -->
-        <div class="mt-auto pt-6 flex flex-col items-center gap-2">
-            <a href="mailto:TIPTAP2026@GMAIL.COM" class="text-[10px] font-black text-slate-300 hover:text-blue-500 transition-colors uppercase italic tracking-widest decoration-slate-100 underline underline-offset-4 uppercase">✉️ צור קשר ותמיכה טכנית</a>
+        <!-- טוען נתונים -->
+        <div id="loader-view" class="py-20 flex flex-col items-center">
+            <div class="loader mb-4"></div>
+            <p class="text-slate-400 font-bold">בודק סטטוס כרטיס...</p>
         </div>
-    </div>
 
-    <!-- Modals (FAQ / Guide / Terms) -->
-    <div id="guide-modal" class="fixed inset-0 bg-black/80 z-[60] hidden flex-col items-center justify-center p-4">
-        <button onclick="toggleModal('guide-modal',false)" class="self-end text-white text-3xl mb-2">&times;</button>
-        <img src="https://raw.githubusercontent.com/mc26589/EASYTIP/main/Gemini_Generated_Image_34mb2434mb2434mb.png" class="max-w-full rounded-3xl border-2 border-white shadow-2xl">
-    </div>
-
-    <div id="faq-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50 backdrop-blur-sm text-right">
-        <div class="bg-white rounded-[2rem] w-full max-w-md p-6 modal-enter flex flex-col max-h-[85vh]">
-            <div class="flex justify-between items-center mb-6 border-b pb-4"><h3 class="font-bold text-xl">עזרה ושאלות נפוצות</h3><button onclick="toggleModal('faq-modal',false)" class="text-2xl text-slate-300">&times;</button></div>
-            <div class="space-y-3 overflow-y-auto text-sm pr-1">
-                <details class="bg-slate-50 p-4 rounded-xl"><summary class="font-bold cursor-pointer">איך מוציאים QR מביט?</summary>
-                    <p class="mt-2 leading-relaxed">היכנסו לאפליקציה > 3 נקודות בתפריט העליון > "קוד ה-QR הקבוע שלי לקבלת כסף" > צלמו מסך והעלו.</p></details>
-                <details class="bg-red-50 p-4 rounded-xl text-red-600 border border-red-100"><summary class="font-bold cursor-pointer underline">שכחתי את הקוד הסודי?</summary>
-                    <p class="mt-2 text-xs font-normal">לא ניתן לשחזר קוד שאבד. במידה ושכחתם, לא תוכלו לאפס את הכרטיס ותצטרכו לרכוש כרטיס חדש. רשמו אותו במקום בטוח!</p></details>
-                <details class="bg-slate-50 p-4 rounded-xl"><summary class="font-bold cursor-pointer">האם השירות עולה לי כסף?</summary>
-                    <p class="mt-2 italic font-black"><b>לא.</b> המותג TipTap לא גובה עמלה על הטיפים שלך. הכסף עובר ב-100% ישירות לחשבון הביט שלך.</p></details>
-                <details class="bg-slate-50 p-4 rounded-xl"><summary class="font-bold cursor-pointer">האם המידע שלי מאובטח?</summary>
-                    <p class="mt-2 font-black italic">כן. אנחנו שומרים רק את הקישור הציבורי לתשלום. אין לנו שום גישה לחשבון הבנק, ליתרה או לפרטים האישיים בתוך הביט.</p></details>
+        <!-- אזור התוכן המתחלף -->
+        <div id="main-view" class="hidden flex-grow flex flex-col">
+            
+            <!-- שלב א: בחירת מסלול -->
+            <div id="selection-screen">
+                <p class="text-sm font-bold text-slate-600 mb-6 text-center italic uppercase">מה ה-TipTap שלך יעשה?</p>
+                <button onclick="showStep2('tip')" class="w-full p-4 mb-3 border-2 border-blue-100 rounded-2xl flex items-center gap-4 bg-white transition-all hover:bg-blue-50 text-right group">
+                    <div class="text-3xl italic">💰</div>
+                    <div class="text-right leading-none"><span class="font-black text-blue-900 block text-right font-black uppercase">מסלול טיפ</span><span class="text-[10px] text-blue-500 italic">חיבור ל-Bit (מלצרים ושליחים)</span></div>
+                </button>
+                <button onclick="showStep2('link')" class="w-full p-4 mb-8 border-2 border-orange-100 rounded-2xl flex items-center gap-4 bg-white transition-all hover:bg-orange-50 text-right group text-right">
+                    <div class="text-3xl italic text-right">🚀</div>
+                    <div class="text-right leading-none"><span class="font-black text-orange-900 block text-right font-black italic">מסלול עסקי</span><span class="text-[10px] text-orange-400 italic">מעבר לקישור אתר / אינסטגרם</span></div>
+                </button>
+                <button onclick="toggleModal('guide-modal',true)" class="text-sm font-bold text-orange-600 underline py-2 block w-full mb-2">📸 הדרכה להפעלת הכרטיס</button>
+                <button onclick="toggleModal('faq-modal',true)" class="text-xs text-slate-400 underline font-bold uppercase tracking-widest text-center block w-full">עזרה ושאלות נפוצות</button>
             </div>
-            <button onclick="toggleModal('faq-modal',false)" class="w-full bg-slate-800 text-white py-4 rounded-2xl mt-6 font-bold uppercase tracking-widest italic font-black uppercase">סגור</button>
+
+            <!-- שלב ב: טופס הרשמה -->
+            <div id="registration-screen" class="hidden text-right space-y-4">
+                <button onclick="showStep1()" class="text-xs font-bold text-blue-500 mb-6 underline flex items-center tracking-tighter italic">← חזרה לבחירה</button>
+                
+                <!-- שדה QR (רק למסלול טיפ) -->
+                <div id="row-qr" class="hidden">
+                    <p class="text-xs font-black text-slate-400 mr-1 mb-2 italic tracking-tighter uppercase font-black tracking-widest">קוד QR מביט:</p>
+                    <label id="upload-box" class="flex items-center gap-4 p-5 border-2 border-dashed border-blue-200 rounded-[1.5rem] bg-white cursor-pointer hover:bg-blue-50">
+                        <img src="https://raw.githubusercontent.com/mc26589/EASYTIP/main/1200px-Bit_logo_2024.svg.png" class="w-10">
+                        <span id="stext" class="text-sm font-bold text-slate-500 italic">לחץ לבחירה...</span>
+                        <input type="file" id="f-input" class="hidden" accept="image/*" onchange="selectedBitFile=this.files[0];document.getElementById('stext').innerText='קובץ נבחר ✅';">
+                    </label>
+                </div>
+
+                <!-- שדה קישור (רק למסלול עסקי) -->
+                <div id="row-link" class="hidden">
+                    <p class="text-xs font-black text-slate-400 mr-1 mb-2 italic tracking-tighter font-black">הדבק קישור (URL):</p>
+                    <input type="url" id="link-field" placeholder="https://..." class="w-full p-4 border-2 border-slate-100 rounded-2xl bg-slate-50 text-left outline-none font-mono">
+                </div>
+
+                <!-- שדות משותפים -->
+                <div>
+                    <p class="text-xs font-black text-slate-400 mr-1 mb-1 italic font-black uppercase italic uppercase tracking-tighter italic font-black uppercase tracking-tighter italic">שם בעל הכרטיס:</p>
+                    <input type="text" id="name-field" placeholder="דוגמה: אבי המלך 👑" class="w-full p-3 border-2 border-slate-100 rounded-xl italic font-black bg-slate-50 focus:border-blue-400 outline-none text-right transition-all">
+                </div>
+                
+                <div>
+                    <p class="text-xs font-black text-slate-400 mr-1 mb-1 italic font-black uppercase">קוד סודי (4 ספרות) - לאזור האישי:</p>
+                    <input type="tel" id="pin-field" maxlength="4" placeholder="____" class="w-full p-3 border-2 border-slate-100 rounded-xl text-center text-3xl font-black tracking-[0.5em] outline-none">
+                </div>
+
+                <div class="flex items-start gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200 mt-4 text-right leading-none uppercase font-black uppercase tracking-tighter italic font-black uppercase tracking-tighter">
+                    <input type="checkbox" id="check-v" class="mt-1 w-5 h-5 cursor-pointer">
+                    <label class="text-[10px] text-slate-500 text-right leading-tight">אני מאשר שהקודים שהזנתי הם שלי בלבד ובהתאם <button onclick="toggleModal('terms-modal',true)" class="underline font-bold text-blue-600">לתנאי השירות</button>. הכרטיס יינעל לאחר ההפעלה.</label>
+                </div>
+
+                <button onclick="processFinalActivation()" class="w-full bg-blue-600 text-white font-black py-4 rounded-[1.8rem] shadow-xl text-xl mt-6 transition-all active:scale-95 uppercase tracking-widest italic font-black italic">הפעל TipTap 🚀</button>
+            </div>
+
+            <!-- שלב ג: דף תשלום / כרטיס פעיל -->
+            <div id="payment-screen" class="hidden flex-grow flex flex-col h-full text-center">
+                <!-- כאן ייכנס התוכן של הכרטיס הפעיל דרך ה-JS -->
+            </div>
+
+        </div>
+
+        <!-- צור קשר בתחתית -->
+        <div id="footer-contact" class="mt-auto pt-6 flex justify-center items-center gap-1 opacity-20 hover:opacity-100 transition-opacity">
+            <a href="mailto:TIPTAP2026@GMAIL.COM" class="text-[10px] font-black text-slate-400 uppercase tracking-widest decoration-slate-300 underline-offset-4 underline italic uppercase font-black">✉️ צור קשר ותמיכה טכנית</a>
         </div>
     </div>
 
-    <!-- מודל תקנון -->
+    <!-- Modals -->
+    <div id="guide-modal" class="fixed inset-0 bg-black/80 z-[60] hidden flex-col items-center justify-center p-4 backdrop-blur-md">
+        <button onclick="toggleModal('guide-modal',false)" class="self-end text-white text-3xl mb-2">&times;</button>
+        <img src="https://raw.githubusercontent.com/mc26589/EASYTIP/main/Gemini_Generated_Image_34mb2434mb2434mb.png" class="max-w-full rounded-3xl border-4 border-white shadow-2xl">
+    </div>
+
+    <div id="faq-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50 backdrop-blur-sm text-right leading-none uppercase font-black uppercase tracking-tighter italic font-black">
+        <div class="bg-white rounded-[2rem] w-full max-w-md p-6 modal-view">
+            <div class="flex justify-between items-center mb-6"><h3 class="font-bold text-xl">שאלות ותשובות</h3><button onclick="toggleModal('faq-modal',false)" class="text-2xl text-slate-300">&times;</button></div>
+            <div class="space-y-3 text-sm text-slate-600 overflow-y-auto max-h-[60vh] pr-1">
+                <details class="bg-slate-50 p-4 rounded-xl border"><summary class="font-bold cursor-pointer">איך מוציאים QR מביט?</summary>
+                    <p class="mt-2">ביט > 3 נקודות למעלה > "קוד QR הקבוע שלי לקבלת כסף" > צלמו מסך.</p></details>
+                <details class="bg-red-50 p-4 rounded-xl border border-red-100 text-red-600 font-bold"><summary class="cursor-pointer underline">שכחתי קוד סודי?</summary>
+                    <p class="mt-2 text-xs font-normal">לא ניתן לשחזר. במידה ושכחתם, לא תוכלו לאפס את הכרטיס ותיאלצו לרכוש חדש. שמרו אותו היטב!</p></details>
+                <details class="bg-slate-50 p-4 rounded-xl border"><summary class="font-bold cursor-pointer">האם יש עמלות?</summary>
+                    <p class="mt-2 font-black italic text-right italic uppercase tracking-tighter">לא. הכסף עובר ב-100% ממכונת הלקוח אליך לחשבון האפליקציה.</p></details>
+                <details class="bg-slate-50 p-4 rounded-xl border"><summary class="font-bold cursor-pointer">האם הפרטים שלי מוגנים?</summary>
+                    <p class="mt-2 text-right">אנחנו שומרים רק את קישור התשלום הציבורי שנוצר באפליקציות. אין לנו גישה לבנק שלכם.</p></details>
+            </div>
+            <button onclick="toggleModal('faq-modal',false)" class="w-full bg-slate-800 text-white py-4 rounded-2xl mt-8 font-bold">סגור</button>
+        </div>
+    </div>
+
     <div id="terms-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50">
         <div class="bg-white rounded-[2rem] w-full max-w-md p-8 text-right modal-enter">
-            <h3 class="font-black text-xl mb-4 border-b pb-4 uppercase tracking-tighter italic font-black uppercase italic tracking-widest uppercase italic font-black uppercase italic tracking-widest uppercase">תנאי שימוש</h3>
+            <h3 class="font-black text-xl mb-4 border-b pb-4">תקנון קצר</h3>
             <div class="text-xs text-slate-500 space-y-4">
-                <p>• השירות ניתן ללא אחריות לשיבושים צד ג'.</p>
-                <p>• הכרטיס ננעל לאחר ההפעלה. איבוד קוד סודי ידרוש כרטיס חדש.</p>
-                <p>• המערכת רשאית להפסיק שירות בכל עת.</p>
+                <p>• השירות ניתן ללא אחריות לתקלות צד ג'.</p>
+                <p>• הכרטיס ננעל לאחר הפעלה (One-time Activate).</p>
+                <p>• איבוד הקוד הסודי הוא באחריות המשתמש.</p>
+                <p>• רשאים להפסיק שירות בכל עת.</p>
             </div>
-            <button onclick="toggleModal('terms-modal',false)" class="w-full bg-blue-600 text-white py-4 rounded-2xl mt-6 font-bold shadow-lg">קראתי ואישרתי</button>
+            <button onclick="toggleModal('terms-modal',false)" class="w-full bg-blue-600 text-white py-4 rounded-xl mt-6 font-bold uppercase tracking-widest italic font-black uppercase">הבנתי ואישרתי</button>
         </div>
     </div>
 
     <script>
         async function init() {
-            if(!cardId) { renderUI('<p class="py-10 text-slate-500 font-bold italic tracking-tighter">נא לסרוק QR תקין מהכרטיס</p>'); return; }
-            document.getElementById('ui-card-label').innerText = `CARD #${cardId}`;
+            if(!cardId) {
+                document.getElementById('loader-view').innerHTML = '<p class="py-10 font-bold">נא לסרוק QR תקין</p>';
+                return;
+            }
+            document.getElementById('ui-card-id').innerText = `CARD #${cardId}`;
             if(urlParams.get('reset')) document.getElementById('reset-success').classList.remove('hidden');
 
             try {
-                const res = await fetch(`${API_URL}?id=${cardId}&action=getData`);
-                const data = await res.json();
-                if (data.status === "ACTIVE") renderPayment(data);
-                else renderPick();
-            } catch(e) { renderUI('<p class="text-red-500 font-bold p-10">חיבור לשרת נכשל. נסה לרענן.</p>'); }
-        }
+                const r = await fetch(`${API_URL}?id=${cardId}&action=getData`);
+                const d = await r.json();
+                document.getElementById('loader-view').classList.add('hidden');
+                document.getElementById('main-view').classList.remove('hidden');
 
-        function renderUI(h) {
-            document.getElementById('loader-view').classList.add('hidden');
-            const v = document.getElementById('app-view');
-            v.innerHTML = h; v.classList.remove('hidden');
-        }
-
-        function renderPick() {
-            renderUI(`
-                <p class="text-sm font-bold text-slate-600 mb-6 italic tracking-tight">מה ה-TipTap שלך יעשה?</p>
-                <button onclick="renderRegistration('tip')" class="w-full p-4 mb-4 border-2 border-blue-100 rounded-2xl bg-white hover:bg-blue-50 transition-all flex items-center gap-4 text-right">
-                    <div class="text-3xl">💰</div>
-                    <div class="leading-none"><span class="font-black text-blue-900 block text-right font-black uppercase">מסלול טיפ</span><span class="text-[10px] text-blue-500 italic tracking-tighter">חיבור ל-Bit (מלצרים ושליחים)</span></div>
-                </button>
-                <button onclick="renderRegistration('link')" class="w-full p-4 mb-10 border-2 border-orange-100 rounded-2xl bg-white hover:bg-orange-50 transition-all flex items-center gap-4 text-right">
-                    <div class="text-3xl">🚀</div>
-                    <div class="leading-none text-right"><span class="font-black text-orange-900 block font-black uppercase italic tracking-tighter uppercase italic tracking-tighter italic">מסלול עסקי</span><span class="text-[10px] text-orange-400 italic">מעבר לקישור אתר / אישי</span></div>
-                </button>
-                <div class="space-y-4">
-                    <button onclick="toggleModal('guide-modal',true)" class="text-sm font-bold text-orange-600 underline">📸 הדרכה להפעלה</button><br>
-                    <button onclick="toggleModal('faq-modal',true)" class="text-xs text-slate-300 underline font-bold uppercase tracking-widest italic font-black uppercase italic tracking-tighter uppercase font-black italic tracking-widest italic font-black italic uppercase">עזרה ושאלות נפוצות</button>
-                </div>
-            `);
-        }
-
-        function renderRegistration(m) {
-            renderUI(`
-                <button onclick="renderPick()" class="text-xs font-bold text-blue-500 mb-6 underline flex items-center tracking-tighter">← חזרה</button>
-                <div class="space-y-5 text-right flex flex-col">
-                    ${m==='tip' ? `
-                    <div><p class="text-xs font-black text-slate-400 mr-1 mb-2 uppercase font-black tracking-widest uppercase italic tracking-tighter">העלאת קוד ה-QR שלך מביט:</p>
-                    <label id="upload-box" class="flex items-center gap-4 p-5 border-2 border-dashed border-blue-200 rounded-[1.5rem] bg-white cursor-pointer hover:bg-blue-50">
-                        <img src="https://raw.githubusercontent.com/mc26589/EASYTIP/main/1200px-Bit_logo_2024.svg.png" class="w-10">
-                        <span id="stext" class="text-sm font-bold text-slate-400 italic uppercase">לחץ לבחירה...</span>
-                        <input type="file" id="finput" class="hidden" accept="image/*" onchange="currentUploadedFile=this.files[0];document.getElementById('stext').innerText='נבחר ✅'">
-                    </label></div>` : `
-                    <div><p class="text-xs font-black text-slate-400 mr-1 mb-2 italic tracking-tighter font-black">הדבק קישור אתר / אינסטגרם:</p>
-                    <input type="url" id="link-field" placeholder="https://..." class="w-full p-4 border-2 border-slate-100 rounded-xl bg-slate-50 text-left outline-none font-mono"></div>`}
-                    
-                    <div><p class="text-xs font-black text-slate-400 mr-1 mb-1 italic font-black italic uppercase">שם בעל הכרטיס:</p>
-                    <input type="text" id="name-field" placeholder="דוגמה: אבי המלך 👑" class="w-full p-3 border-2 border-slate-100 rounded-xl italic font-black bg-slate-50 focus:border-blue-400 outline-none"></div>
-                    
-                    <div><p class="text-xs font-black text-slate-400 mr-1 mb-1 italic tracking-widest uppercase">קוד סודי (4 ספרות):</p>
-                    <input type="tel" id="pin-field" maxlength="4" placeholder="____" class="w-full p-3 border-2 border-slate-100 rounded-xl text-center text-3xl font-black tracking-[0.5em] outline-none"></div>
-
-                    <div class="flex gap-2 p-3 bg-slate-50 rounded-xl border">
-                        <input type="checkbox" id="check-v" class="mt-1 w-5 h-5 cursor-pointer">
-                        <label class="text-[10px] text-slate-400 leading-tight">אני מאשר את <button onclick="toggleModal('terms-modal',true)" class="underline font-bold text-blue-600">התקנון</button>. הכרטיס חד פעמי וננעל לאחר ההפעלה.</label>
-                    </div>
-                    <button onclick="handleSend('${m}')" class="w-full bg-blue-600 text-white font-black py-4 rounded-[1.8rem] shadow-xl text-xl mt-4 active:scale-95 transition-all">הפעל TipTap 🚀</button>
-                </div>
-            `);
-        }
-
-        async function handleSend(m) {
-            const name = document.getElementById('name-field').value;
-            const pin = document.getElementById('pin-field').value;
-            const chk = document.getElementById('check-v').checked;
-            if(!name || pin.length!==4 || !chk) return alert("מלא פרטים, 4 ספרות קוד ואשר תקנון");
-
-            renderUI('<div class="py-20 flex flex-col items-center"><div class="loader mb-4"></div><p class="font-black text-blue-600 animate-pulse italic tracking-tighter uppercase italic tracking-widest">מגדיר כרטיס...</p></div>');
-            try {
-                let bit = "", dir = "";
-                if(m==='tip') {
-                    if(!currentUploadedFile) throw "העלה קובץ";
-                    bit = await scanQR(currentUploadedFile); if(!bit) throw "QR לא זוהה";
-                } else { dir = document.getElementById('link-field').value; }
-                window.location.href = `${API_URL}?action=save&id=${cardId}&type=${m}&name=${encodeURIComponent(name)}&pin=${pin}&bit=${encodeURIComponent(bit)}&direct=${encodeURIComponent(dir)}`;
-            } catch(e) { alert("שגיאה: "+e); renderPick(); }
-        }
-
-        function renderPayment(d) {
-            renderUI(`
-                <h1 class="text-3xl font-black text-slate-800 mb-1 italic tracking-tight font-black uppercase italic tracking-tighter uppercase font-black uppercase">פרגן ל${d.name}!</h1>
-                <p class="text-slate-500 text-sm mb-10 tracking-tight italic font-black uppercase tracking-tighter italic">מצמידים ומפרגנים • מאובטח ב-bit</p>
-                <button onclick="openLink('${d.bit}')" class="group w-full bg-white border-2 border-[#00b0e9] text-[#00b0e9] p-5 rounded-2xl flex items-center justify-between shadow-lg mb-4 active:scale-95 transition-all">
-                    <div class="flex items-center gap-4 italic font-black"><img src="https://raw.githubusercontent.com/mc26589/EASYTIP/main/1200px-Bit_logo_2024.svg.png" class="w-10"><span>תשלום ב-bit</span></div>
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-width="3"/></svg>
-                </button>
-                ${d.type==='link' ? `<a href="${d.link}" target="_top" class="w-full bg-orange-500 text-white p-6 rounded-2xl text-xl font-black shadow-lg block italic uppercase italic tracking-tighter italic tracking-widest uppercase mb-10 text-center uppercase">ביקור באתר 🚀</a>`:''}
-                <div class="mt-4 bg-green-50 border border-green-100 rounded-xl p-3 flex items-center justify-center gap-3">
-                   <div class="text-green-600 rounded-full"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M2.166 10.324a.75.75 0 01.666-1.292C6.197 10.885 10 10.885 13.168 9.032a.75.75 0 01.764 1.288c-3.583 2.095-7.965 2.095-11.766-.996zM10 1.5a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 1.5z"/></svg></div>
-                   <span class="text-green-800 font-bold text-[10px]">🛡️ סריקת אבטחה הסתיימה בהצלחה • תשלום מוגן</span>
-                </div>
-                <div class="mt-12"><button onclick="showPers()" class="text-xs font-black text-blue-500 underline py-2 decoration-blue-200">אזור אישי לבעל הכרטיס</button></div>
-            `);
-
-            if(!document.getElementById('pm')) {
-               document.body.insertAdjacentHTML('beforeend', `
-               <div id="pm" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50 backdrop-blur-sm">
-                  <div class="bg-white rounded-[2rem] p-6 w-full max-w-xs text-center shadow-2xl relative">
-                     <h3 class="font-black mb-4 border-b pb-4 text-right">אזור אישי</h3>
-                     <input type="tel" id="pp" placeholder="PIN" maxlength="4" class="w-full text-center text-4xl font-black p-4 border-2 border-slate-100 rounded-xl mb-4 bg-slate-50 focus:border-blue-400 outline-none italic tracking-widest uppercase italic font-bold">
-                     <button id="pbtn" onclick="fetchP()" class="w-full bg-blue-600 text-white font-black py-4 rounded-xl text-xl shadow-xl italic font-black uppercase">כניסה</button>
-                     <button onclick="toggleModal('pm',false)" class="text-slate-300 mt-6 text-xs uppercase font-black uppercase">סגור</button>
-                     <div id="pout" class="mt-6 hidden bg-blue-50 p-4 rounded-xl italic"></div>
-                  </div>
-               </div>`);
+                if (d.status === "ACTIVE") renderActiveContent(d);
+            } catch(e) { 
+                document.getElementById('loader-view').innerHTML = '<p class="text-red-500 font-bold p-10 text-center uppercase tracking-tighter">חיבור לשרת נכשל</p>';
             }
         }
 
-        async function fetchP() {
-            const pin = document.getElementById('pp').value; if(pin.length!==4)return;
-            document.getElementById('pbtn').innerText='...';
-            try {
-               const r = await fetch(`${API_URL}?action=getStats&id=${cardId}&pin=${pin}`);
-               const d = await r.json(); document.getElementById('pbtn').innerText='כניסה';
-               const o = document.getElementById('pout'); o.classList.remove('hidden');
-               if(d.success) o.innerHTML=`סריקות: <b class='text-blue-600 text-xl'>${d.total}</b><br>ממוצע ליום: <b class='text-blue-600'>${d.average}</b><hr class='my-3'><button onclick="window.location.href='${API_URL}?action=reset&id=${cardId}&pin=${pin}'" class='text-red-500 font-bold underline'>🗑️ איפוס ומחיקה</button>`;
-               else o.innerHTML="קוד שגוי ❌";
-            } catch(e) { alert("תקלה"); }
+        function showStep1() {
+            document.getElementById('selection-screen').classList.remove('hidden');
+            document.getElementById('registration-screen').classList.add('hidden');
         }
 
-        function toggleModal(i,s) { const el=document.getElementById(i); if(s){el.classList.remove('hidden');el.classList.add('flex');} else {el.classList.add('hidden');el.classList.remove('flex');} }
-        function showPers() { toggleModal('pm',true); }
-        function openLink(u) { const b=u.trim().startsWith('h')?u:'https://'+u; const w=window.open(b,'_blank'); if(!w || w.closed) window.top.location.href=b; }
+        function showStep2(mode) {
+            activeMode = mode;
+            document.getElementById('selection-screen').classList.add('hidden');
+            document.getElementById('registration-screen').classList.remove('hidden');
+            document.getElementById('row-qr').style.display = (mode === 'tip' ? 'block' : 'none');
+            document.getElementById('row-link').style.display = (mode === 'link' ? 'block' : 'none');
+        }
 
-        async function scanQR(f) {
-           return new Promise(resolve=>{
-               const reader = new FileReader(); reader.readAsDataURL(f);
-               reader.onload = e=>{
-                   const im = new Image(); im.src=e.target.result;
-                   im.onload = ()=>{
-                       const c=document.createElement('canvas'); const ct=c.getContext('2d');
-                       const sc=Math.min(800/im.width,800/im.height);
-                       c.width=im.width*sc; c.height=im.height*sc;
-                       ct.drawImage(im,0,0,c.width,c.height);
-                       let q=jsQR(ct.getImageData(0,0,c.width,c.height).data, c.width, c.height);
-                       if(!q) { ct.drawImage(im,0,im.height*0.25,im.width,im.height*0.5,0,0,c.width,c.height); q=jsQR(ct.getImageData(0,0,c.width,c.height).data, c.width, c.height); }
-                       resolve(q?q.data:null);
-                   }
-               }
+        async function processFinalActivation() {
+            const nameField = document.getElementById('name-field');
+            const pinField = document.getElementById('pin-field');
+            const checkV = document.getElementById('check-v');
+            const linkField = document.getElementById('link-field');
+
+            if(!nameField.value || pinField.value.length !== 4 || !checkV.checked) {
+                return alert("אנא מלא שם, 4 ספרות קוד ואשר את התקנון.");
+            }
+
+            document.getElementById('main-view').classList.add('hidden');
+            document.getElementById('loader-view').classList.remove('hidden');
+            document.querySelector('#loader-view p').innerText = "מעבד נתונים בשרת...";
+
+            try {
+                let bit = "", dir = "";
+                if(activeMode === 'tip') {
+                    if(!selectedBitFile) throw "חובה להעלות צילום מסך";
+                    bit = await scanQrCode(selectedBitFile);
+                    if(!bit) throw "לא מצאנו QR בתמונה. נסה שוב.";
+                } else {
+                    dir = linkField.value;
+                    if(!dir) throw "חובה להדביק קישור לעסק";
+                    if(!dir.startsWith('http')) dir = 'https://' + dir;
+                }
+
+                // Redirect לשמירה מאובטחת
+                window.location.href = `${API_URL}?action=save&id=${cardId}&type=${activeMode}&name=${encodeURIComponent(nameField.value)}&pin=${pinField.value}&bit=${encodeURIComponent(bit)}&direct=${encodeURIComponent(dir)}`;
+            } catch(e) { 
+                alert("שגיאה: " + e); 
+                document.getElementById('main-view').classList.remove('hidden');
+                document.getElementById('loader-view').classList.add('hidden');
+            }
+        }
+
+        function renderActiveContent(d) {
+            document.getElementById('selection-screen').classList.add('hidden');
+            document.getElementById('payment-screen').classList.remove('hidden');
+            document.getElementById('payment-screen').innerHTML = `
+                <h1 class="text-3xl font-black text-slate-800 mb-1 uppercase italic italic tracking-tighter">פרגן ל${d.name}!</h1>
+                <p class="text-slate-500 text-sm mb-10 italic font-bold">מצמידים ומפרגנים • מאובטח ב-bit</p>
+                <button onclick="triggerLink('${d.bit}')" class="group w-full bg-white border-2 border-[#00b0e9] text-[#00b0e9] p-5 rounded-2xl flex items-center justify-between shadow-lg shadow-blue-50 transform active:scale-95 transition-all mb-4">
+                   <div class="flex items-center gap-4 italic font-black uppercase"><img src="https://raw.githubusercontent.com/mc26589/EASYTIP/main/1200px-Bit_logo_2024.svg.png" class="w-10"><span>תשלום ב-bit</span></div>
+                   <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M15 19l-7-7 7-7" stroke-linecap="round"/></svg>
+                </button>
+                ${d.type==='link' ? `<a href="${d.link}" target="_top" class="w-full bg-orange-500 text-white p-6 rounded-2xl text-xl font-black shadow-lg block italic uppercase italic tracking-widest text-center mb-10 italic tracking-tighter italic uppercase italic tracking-tighter italic font-black italic">ביקור באתר 🚀</a>`:''}
+                <div class="mt-8 bg-green-50 border border-green-200 rounded-2xl p-4 flex items-center justify-center gap-4">
+                   <div class="bg-green-100 text-green-600 rounded-full p-1"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M2.166 10.324a.75.75 0 01.666-1.292C6.197 10.885 10 10.885 13.168 9.032a.75.75 0 01.764 1.288c-3.583 2.095-7.965 2.095-11.766-.996zM10 1.5a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 1.5z"/></svg></div>
+                   <span class="text-green-800 font-bold text-[10px]">🛡️ סריקת אבטחה הסתיימה • תשלום מוגן</span>
+                </div>
+                <button onclick="toggleModal('psm', true)" class="mt-12 text-sm font-black text-blue-500 underline py-2 decoration-blue-200 uppercase tracking-widest">אזור אישי לבעל הכרטיס</button>
+            `;
+            
+            // Stats modal inside container
+            if(!document.getElementById('psm')){
+               document.body.insertAdjacentHTML('beforeend', `
+                <div id="psm" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50 backdrop-blur-sm">
+                   <div class="bg-white rounded-[2.5rem] p-8 w-full max-w-xs text-center shadow-2xl relative modal-enter">
+                      <h3 class="font-black text-xl mb-4 italic text-slate-800 italic uppercase">אזור אישי</h3>
+                      <input type="tel" id="vp-in" placeholder="____" maxlength="4" class="w-full text-center text-4xl font-black p-4 border-2 border-slate-100 rounded-2xl mb-6 bg-slate-50 outline-none italic tracking-[0.5em] focus:border-blue-400">
+                      <button id="vb-go" onclick="getVs()" class="w-full bg-blue-600 text-white font-black py-4 rounded-xl text-xl shadow-lg shadow-blue-100 uppercase tracking-widest italic font-black uppercase">כניסה</button>
+                      <button onclick="toggleModal('psm',false)" class="text-slate-300 mt-6 text-xs font-black uppercase tracking-tighter">ביטול</button>
+                      <div id="vo-out" class="mt-6 hidden bg-blue-50 p-6 rounded-3xl border border-blue-100"></div>
+                   </div>
+                </div>`);
+            }
+        }
+
+        async function getVs() {
+           const pin = document.getElementById('vp-in').value; if(pin.length!==4)return;
+           document.getElementById('vb-go').innerText='בודק...';
+           const r = await fetch(`${API_URL}?action=getStats&id=${cardId}&pin=${pin}`);
+           const d = await r.json(); document.getElementById('vb-go').innerText='כניסה';
+           const div = document.getElementById('vo-out'); div.classList.remove('hidden');
+           if(d.success) div.innerHTML = `<p class='text-xs'>סה"כ סריקות: <b class='text-xl text-blue-600 font-black italic tracking-widest'>${d.total}</b></p><p class='text-xs mt-2 italic font-black'>ממוצע יומי: ${d.average}</p><button onclick="if(confirm('לאפס?'))window.location.href='${API_URL}?action=reset&id=${cardId}&pin=${pin}'" class='text-red-500 font-bold underline mt-6 text-[10px] uppercase'>🗑️ איפוס ומחיקה</button>`;
+           else div.innerHTML = 'קוד שגוי ❌';
+        }
+
+        function toggleModal(i,s) { const el=document.getElementById(i); if(s){el.classList.remove('hidden');el.classList.add('flex');}else{el.classList.add('hidden');el.classList.remove('flex');} }
+        function triggerLink(u) { const b=u.trim().startsWith('h')?u:'https://'+u; const w=window.open(b,'_blank'); if(!w || w.closed) window.top.location.href = b; }
+
+        async function scanQrCode(f) {
+           return new Promise(r=>{
+              const reader = new FileReader(); reader.readAsDataURL(f);
+              reader.onload = e=>{
+                  const img = new Image(); img.src = e.target.result;
+                  img.onload = ()=>{
+                      const can=document.createElement('canvas'); const ct=can.getContext('2d');
+                      const sc=Math.min(800/img.width, 800/img.height);
+                      can.width=img.width*sc; can.height=img.height*sc;
+                      ct.drawImage(img,0,0,can.width,can.height);
+                      let q=jsQR(ct.getImageData(0,0,can.width,can.height).data, can.width, can.height);
+                      if(!q) { ct.drawImage(img,0,img.height*0.25,img.width,img.height*0.5,0,0,can.width,can.height); q=jsQR(ct.getImageData(0,0,can.width,can.height).data, can.width, can.height); }
+                      r(q?q.data:null);
+                  }
+              }
            });
         }
         init();
