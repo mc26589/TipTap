@@ -1,0 +1,8 @@
+{
+  "name": "tiptap-backend",
+  "version": "1.0.0",
+  "description": "Backend functions for TipTap card",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  }
+}
