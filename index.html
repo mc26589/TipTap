@@ -429,6 +429,67 @@
                 reader.readAsDataURL(file);
             });
         }
+        async function checkStats() {
+            const p = document.getElementById('admin-pin').value;
+            if(p.length !== 4) return showToast("הזן 4 ספרות", true);
+
+            const btn = event.currentTarget;
+            const originalTxt = btn.innerText;
+            btn.innerText = "מאמת...";
+            btn.disabled = true;
+
+            try {
+                const r = await fetch(`${API_URL}?action=getStats&id=${cardId}&pin=${p}`);
+                const d = await r.json();
+                
+                if(d.success) {
+                    document.getElementById('admin-login-view').classList.add('hidden');
+                    document.getElementById('admin-stats-view').classList.remove('hidden');
+                    document.getElementById('stat-scans').innerText = d.total;
+                    document.getElementById('stat-avg').innerText = d.average;
+                } else {
+                    handleSecurityError(d); // פונקציה שמטפלת בהודעות הנעילה
+                }
+            } catch(e) { showToast("שגיאת רשת", true); }
+            
+            btn.innerText = originalTxt;
+            btn.disabled = false;
+        }
+
+        async function executeReset() {
+            const btns = document.querySelectorAll('#confirm-delete-modal button');
+            btns.forEach(b => { b.innerText = "..."; b.disabled=true; });
+            
+            const p = document.getElementById('admin-pin').value;
+            
+            try {
+                const r = await fetch(`${API_URL}?action=reset&id=${cardId}&pin=${p}`);
+                const d = await r.json();
+                
+                if (d.success) {
+                     window.location.reload();
+                } else {
+                     handleSecurityError(d);
+                     toggleModal('confirm-delete-modal', false); // סגור את מודל המחיקה כדי שהמשתמש יראה את הודעת השגיאה
+                     btns.forEach(b => { b.disabled=false; }); // שחרר כפתורים למקרה הבא
+                     document.querySelector('#confirm-delete-modal button.bg-red-500').innerText = "כן, מחק!";
+                     document.querySelector('#confirm-delete-modal button.bg-slate-100').innerText = "ביטול";
+                }
+            } catch(e) {
+                showToast("שגיאת רשת", true);
+            }
+        }
+
+        // פונקציית עזר לטיפול בשגיאות אבטחה
+        function handleSecurityError(data) {
+            if (data.msg === "LOCKED") {
+                showToast(`החשבון ננעל ל-${data.minutesLeft} דקות!`, true);
+            } else if (data.msg === "WRONG_PIN") {
+                showToast(`קוד שגוי (נותרו ${data.attemptsLeft} ניסיונות)`, true);
+            } else {
+                showToast("קוד אישי שגוי", true);
+            }
+        }
 
         init();
     </script>
