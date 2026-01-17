@@ -243,6 +243,19 @@
             </button>
         </div>
 
+        <!-- 2.5 Success View -->
+        <div id="success-view" class="hidden fade-in-up flex-col items-center justify-center text-center h-full py-10">
+            <div
+                class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-green-50 animate-bounce">
+                <span class="text-4xl">✨</span>
+            </div>
+            <h2 class="text-2xl font-black text-slate-800 mb-2">הכרטיס הופעל בהצלחה!</h2>
+            <p class="text-sm font-medium text-slate-500 leading-relaxed px-4">
+                הינך מועבר למסך תשלום הטיפ שישמש אותך מעכשיו לקבלת טיפ בצורה מהירה.
+            </p>
+            <div class="loader-ring mt-8 border-green-200 border-t-green-500"></div>
+        </div>
+
         <!-- 3. Active View -->
         <div id="active-view" class="hidden fade-in-up flex-col text-center h-full pt-2">
             <!-- Dynamic Content -->
@@ -290,25 +303,42 @@
                 class="absolute top-6 left-6 text-slate-300 font-bold">&times;</button>
             <h3 class="font-black text-xl mb-6 text-slate-800">ניהול כרטיס</h3>
             <div id="admin-login-view" class="space-y-4">
-                <input type="tel" id="admin-pin" placeholder="PIN" maxlength="4"
+                <input type="tel" id="admin-pin" placeholder="קוד אישי" maxlength="4"
                     class="w-full text-center text-3xl font-black p-4 bg-slate-50 border rounded-2xl tracking-[0.5em] outline-none focus:border-blue-400">
                 <button onclick="checkStats()"
                     class="btn-press w-full bg-slate-900 text-white font-bold py-4 rounded-2xl shadow-lg">כניסה</button>
             </div>
             <div id="admin-stats-view" class="hidden">
-                <div class="grid grid-cols-2 gap-4 mb-6">
-                    <div class="bg-blue-50 p-4 rounded-2xl"><span
-                            class="text-[10px] text-slate-400 font-black">סריקות</span>
-                        <p id="stat-scans" class="text-3xl font-black text-blue-600">-</p>
-                    </div>
-                    <div class="bg-purple-50 p-4 rounded-2xl"><span
-                            class="text-[10px] text-slate-400 font-black">ממוצע</span>
-                        <p id="stat-avg" class="text-3xl font-black text-purple-600">-</p>
+                <div class="grid grid-cols-1 gap-4 mb-6">
+                    <div class="bg-blue-50 p-6 rounded-2xl border border-blue-100"><span
+                            class="text-xs text-slate-400 font-black uppercase tracking-widest">סה"כ סריקות</span>
+                        <p id="stat-scans" class="text-5xl font-black text-blue-600 mt-2">-</p>
                     </div>
                 </div>
-                <button onclick="doReset()"
-                    class="w-full bg-white text-red-500 font-bold py-2 rounded-xl text-xs border border-red-100">🗑️
-                    מחיקת כרטיס</button>
+                <button onclick="toggleModal('reset-warn-modal', true)"
+                    class="w-full bg-white text-red-500 font-bold py-3 rounded-xl text-sm border border-red-100 hover:bg-red-50 transition-colors">🔄
+                    איפוס כרטיס</button>
+            </div>
+        </div>
+    </div>
+    <div id="reset-warn-modal"
+        class="fixed inset-0 bg-black/60 z-[80] hidden flex items-center justify-center p-6 backdrop-blur-sm"
+        onclick="if(event.target.id==='reset-warn-modal') toggleModal('reset-warn-modal', false)">
+        <div
+            class="bg-white w-full max-w-sm rounded-[2rem] p-6 text-center shadow-2xl skew-y-0 transform transition-all">
+            <div class="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="text-3xl">⚠️</span>
+            </div>
+            <h3 class="font-black text-xl text-slate-800 mb-2">איפוס כרטיס</h3>
+            <p class="text-sm font-medium text-slate-500 mb-6 leading-relaxed">
+                האם אתה בטוח שתרצה לאפס את כרטיסך?<br>לאחר האיפוס הכרטיס יחזור למצב ההתחלתי שלו.
+            </p>
+            <div class="flex gap-3">
+                <button onclick="toggleModal('reset-warn-modal', false)"
+                    class="flex-1 bg-slate-100 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-200 transition-colors">ביטול</button>
+                <button onclick="executeReset()"
+                    class="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-200 hover:bg-red-600 transition-colors">כן,
+                    אפס כרטיס</button>
             </div>
         </div>
     </div>
@@ -471,7 +501,28 @@
                     directLink = l.startsWith('http') ? l : 'https://' + l;
                 }
 
-                window.location.href = `${API_URL}?action=save&id=${cardId}&type=${currentMode}&name=${encodeURIComponent(name)}&pin=${pin}&bit=${encodeURIComponent(bitData)}&direct=${encodeURIComponent(directLink)}`;
+                // First save the data
+                await fetch(`${API_URL}?action=save&id=${cardId}&type=${currentMode}&name=${encodeURIComponent(name)}&pin=${pin}&bit=${encodeURIComponent(bitData)}&direct=${encodeURIComponent(directLink)}`);
+
+                // Show Success Hook
+                document.getElementById('setup-form-view').classList.remove('flex');
+                document.getElementById('setup-form-view').classList.add('hidden');
+                document.getElementById('success-view').classList.remove('hidden');
+                document.getElementById('success-view').classList.add('flex');
+
+                if (window.confetti) {
+                    confetti({
+                        particleCount: 150,
+                        spread: 70,
+                        origin: { y: 0.6 },
+                        colors: ['#22c55e', '#3b82f6', '#fbbf24']
+                    });
+                }
+
+                // Wait 2 seconds then reload
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2500);
 
             } catch (err) {
                 showToast(err, true);
@@ -558,7 +609,8 @@
                     document.getElementById('admin-login-view').classList.add('hidden');
                     document.getElementById('admin-stats-view').classList.remove('hidden');
                     document.getElementById('stat-scans').innerText = d.total;
-                    document.getElementById('stat-avg').innerText = d.average;
+                    // Removed Average
+                    // document.getElementById('stat-avg').innerText = d.average;
                 } else {
                     handleSecurityError(d); // פונקציה שמטפלת בהודעות הנעילה
                 }
@@ -568,11 +620,14 @@
             btn.disabled = false;
         }
 
-        async function doReset() {
-            if (!confirm("פעולה בלתי הפיכה!")) return;
+        async function executeReset() {
             const p = document.getElementById('admin-pin').value;
-            await fetch(`${API_URL}?action=reset&id=${cardId}&pin=${p}`);
-            window.location.reload();
+            try {
+                await fetch(`${API_URL}?action=reset&id=${cardId}&pin=${p}`);
+                window.location.reload();
+            } catch (e) {
+                showToast("שגיאה בביצוע האיפוס", true);
+            }
         }
 
         // פונקציית עזר לטיפול בשגיאות אבטחה
