@@ -165,7 +165,7 @@
                     <div class="text-2xl bg-blue-50 p-2.5 rounded-xl z-10 shrink-0">💰</div>
                     <div class="z-10 grow text-right">
                         <span class="block font-black text-slate-800 text-base">מסלול פרגון בטיפ</span>
-                        <span class="text-xs text-slate-500 font-bold">לשליחים ומלצרים (חיבור ל-Bit)</span>
+                        <span class="text-xs text-slate-500 font-bold">לשליחים ומלצרים (חיבור ל-Bit / PayBox)</span>
                     </div>
                     <div class="text-blue-400 font-bold px-2 z-10">➜</div>
                 </button>
@@ -199,22 +199,42 @@
                 חזרה</button>
             <h2 id="setup-title" class="text-xl font-black text-slate-800 mb-2">הגדרת נתונים</h2>
 
-            <div id="input-group-bit" class="hidden">
-                <div class="flex items-center justify-between mb-1">
-                    <p class="text-xs font-bold text-slate-500">העלאת QR (מביט)</p>
-                    <button onclick="toggleModal('guide-modal', true)"
-                        class="text-[10px] font-bold text-blue-500 underline decoration-blue-200">לא יודעים איך?
-                        למדריך</button>
+            <div id="input-group-bit" class="hidden space-y-4">
+                <!-- Bit Section -->
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <p class="text-xs font-bold text-slate-500">העלאת QR (מביט)</p>
+                        <button onclick="toggleModal('guide-modal', true)"
+                            class="text-[10px] font-bold text-blue-500 underline decoration-blue-200">איך מוצאים?
+                            למדריך</button>
+                    </div>
+                    <label id="bit-label"
+                        class="flex flex-col items-center justify-center h-24 border-2 border-dashed border-blue-200 bg-blue-50/50 rounded-2xl cursor-pointer hover:bg-blue-50 transition-colors">
+                        <img src="https://raw.githubusercontent.com/mc26589/EASYTIP/main/1200px-Bit_logo_2024.svg.png"
+                            class="w-6 opacity-60 mb-2">
+                        <span id="bit-text" class="text-[10px] font-bold text-blue-400 uppercase tracking-wide">לחץ
+                            לבחירת
+                            קובץ</span>
+                        <input type="file" id="fixed-file-input" class="hidden" accept="image/*"
+                            onchange="handleFileSelect(this)">
+                    </label>
                 </div>
-                <label id="bit-label"
-                    class="flex flex-col items-center justify-center h-28 border-2 border-dashed border-blue-200 bg-blue-50/50 rounded-2xl cursor-pointer">
-                    <img src="https://raw.githubusercontent.com/mc26589/EASYTIP/main/1200px-Bit_logo_2024.svg.png"
-                        class="w-6 opacity-60 mb-2">
-                    <span id="bit-text" class="text-[10px] font-bold text-blue-400 uppercase tracking-wide">לחץ לבחירת
-                        קובץ</span>
-                    <input type="file" id="fixed-file-input" class="hidden" accept="image/*"
-                        onchange="handleFileSelect(this)">
-                </label>
+
+                <!-- PayBox Section -->
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <p class="text-xs font-bold text-slate-500">קישור ל-PayBox</p>
+                        <button onclick="toggleModal('paybox-guide-modal', true)"
+                            class="text-[10px] font-bold text-blue-500 underline decoration-blue-200">איך מוצאים?
+                            למדריך</button>
+                    </div>
+                    <div class="relative">
+                        <input type="url" id="paybox-input" dir="ltr" placeholder="https://payboxapp.page.link/..."
+                            class="w-full p-4 pl-12 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-blue-400 transition-colors">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/9/97/PayBox_Logo.png"
+                            class="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 object-contain opacity-50">
+                    </div>
+                </div>
             </div>
 
             <div id="input-group-link" class="hidden">
@@ -237,7 +257,7 @@
                     שום קשר לביט.</p>
             </div>
 
-            <button onclick="saveCardSafe()"
+            <button onclick="preValidateSave()"
                 class="btn-press w-full bg-slate-900 text-white py-4 rounded-2xl font-black shadow-xl text-sm mt-3 flex items-center justify-center gap-2">
                 <span>שמור והפעל כרטיס</span><span>🚀</span>
             </button>
@@ -293,6 +313,38 @@
         onclick="toggleModal('guide-modal', false)">
         <img src="https://raw.githubusercontent.com/mc26589/EASYTIP/main/Gemini_Generated_Image_34mb2434mb2434mb.png"
             class="max-w-full rounded-[2rem] shadow-2xl">
+    </div>
+
+    <!-- PayBox Guide Modal -->
+    <div id="paybox-guide-modal"
+        class="fixed inset-0 bg-black/80 z-[60] hidden flex items-center justify-center p-6 backdrop-blur-sm"
+        onclick="toggleModal('paybox-guide-modal', false)">
+        <img src="PayBox.png" class="max-w-full rounded-[2rem] shadow-2xl">
+    </div>
+
+    <!-- One Method Warning Modal -->
+    <div id="one-method-warning-modal"
+        class="fixed inset-0 bg-black/60 z-[80] hidden flex items-center justify-center p-6 backdrop-blur-sm"
+        onclick="if(event.target.id==='one-method-warning-modal') toggleModal('one-method-warning-modal', false)">
+        <div
+            class="bg-white w-full max-w-sm rounded-[2rem] p-6 text-center shadow-2xl skew-y-0 transform transition-all">
+            <div class="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="text-3xl">💡</span>
+            </div>
+            <h3 class="font-black text-xl text-slate-800 mb-2">המלצה חמה</h3>
+            <p class="text-sm font-medium text-slate-500 mb-6 leading-relaxed">
+                שמתי לב ששמת רק אחד משתי שיטות התשלום.<br>מומלץ להכניס את שתיהם על מנת לפנות לקהל רחב יותר ולהגדיל את
+                הטיפים.<br>האם ברצונך להמשיך בכל זאת?
+            </p>
+            <div class="flex gap-3">
+                <button onclick="toggleModal('one-method-warning-modal', false)"
+                    class="flex-1 bg-slate-100 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-200 transition-colors">לא,
+                    הוסף שיטה</button>
+                <button onclick="saveCardSafe(true)"
+                    class="flex-1 bg-yellow-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-yellow-200 hover:bg-yellow-600 transition-colors">כן,
+                    המשך</button>
+            </div>
+        </div>
     </div>
 
     <div id="admin-modal"
@@ -355,7 +407,8 @@
         // ============================================
 
         const ASSETS = {
-            bit: "https://raw.githubusercontent.com/mc26589/EASYTIP/main/1200px-Bit_logo_2024.svg.png"
+            bit: "https://raw.githubusercontent.com/mc26589/EASYTIP/main/1200px-Bit_logo_2024.svg.png",
+            paybox: "https://upload.wikimedia.org/wikipedia/commons/9/97/PayBox_Logo.png"
         };
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -451,7 +504,7 @@
             const lg = document.getElementById('input-group-link');
 
             if (mode === 'tip') {
-                t.innerText = "הגדרת ביט (טיפ)";
+                t.innerText = "הגדרת אמצעי תשלום";
                 bg.classList.remove('hidden');
                 lg.classList.add('hidden');
             } else {
@@ -477,7 +530,28 @@
             }
         }
 
-        async function saveCardSafe() {
+        function preValidateSave() {
+            if (currentMode === 'tip') {
+                const payboxLink = document.getElementById('paybox-input').value.trim();
+                const hasBit = !!selectedBitFile;
+                const hasPaybox = !!payboxLink;
+
+                if (!hasBit && !hasPaybox) return showToast("חובה להזין לפחות אמצעי תשלום אחד", true);
+                if ((hasBit && !hasPaybox) || (!hasBit && hasPaybox)) {
+                    toggleModal('one-method-warning-modal', true);
+                } else {
+                    saveCardSafe(true);
+                }
+            } else {
+                saveCardSafe(true);
+            }
+        }
+
+        async function saveCardSafe(force = false) {
+            if (currentMode === 'tip' && !force) return preValidateSave();
+
+            toggleModal('one-method-warning-modal', false); // Close warning if open
+
             const name = document.getElementById('fixed-name-input').value.trim();
             const pin = document.getElementById('fixed-pin-input').value.trim();
             let bitData = "", directLink = "";
@@ -485,16 +559,24 @@
             if (!name) return showToast("חסר שם מלא", true);
             if (pin.length !== 4) return showToast("PIN חייב להיות 4 ספרות", true);
 
-            const btn = event.currentTarget;
+            // Find button depending on where call came from (modal or form)
+            // But actually, we triggered it via function, so let's find the main save button
+            // To animate it we need to select it specifically
+            const btn = document.querySelector('#setup-form-view button.btn-press.bg-slate-900');
             const originalHTML = btn.innerHTML;
             btn.innerHTML = `<div class="loader-ring w-5 h-5 border-white border-t-transparent mx-auto"></div>`;
             btn.disabled = true;
 
             try {
                 if (currentMode === 'tip') {
-                    if (!selectedBitFile) throw "נא להעלות צילום מסך";
-                    bitData = await scanQRWrapper(selectedBitFile);
-                    if (!bitData) throw "QR לא זוהה בתמונה";
+                    if (selectedBitFile) {
+                        bitData = await scanQRWrapper(selectedBitFile);
+                        if (!bitData) throw "QR לא זוהה בתמונה (Bit)";
+                    }
+                    // For tip mode, PayBox link goes into 'directLink'
+                    const pb = document.getElementById('paybox-input').value.trim();
+                    if (pb) directLink = pb.startsWith('http') ? pb : 'https://' + pb;
+
                 } else {
                     const l = document.getElementById('fixed-link-input').value.trim();
                     if (!l) throw "נא להזין קישור";
@@ -547,20 +629,47 @@
 
             let actionHTML = '';
             if (data.type === 'tip') {
-                actionHTML = `
-                <button onclick="triggerAction('${data.bit}', 'bit')" class="btn-press group relative w-full bg-white p-1 rounded-3xl shadow-xl shadow-blue-100 transition-all overflow-hidden border border-white">
-                    <div class="absolute inset-0 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 opacity-10"></div>
-                    <div class="relative bg-white border border-blue-50 rounded-[1.3rem] p-5 flex items-center justify-between z-10">
-                        <div class="flex items-center gap-4">
-                            <img src="${ASSETS.bit}" class="w-12 h-12">
-                            <div class="text-right">
-                                <span class="block font-black text-slate-800 text-xl tracking-tight">העברת טיפ</span>
-                                <span class="text-xs text-slate-400 font-bold">ישירות לחשבון Bit</span>
+                // Check if we have Bit, Paybox, or Both
+                const hasBit = data.bit && data.bit.length > 5;
+                const hasPaybox = data.link && data.link.length > 5;
+
+                actionHTML = '<div class="space-y-3 w-full">';
+
+                if (hasBit) {
+                    actionHTML += `
+                    <button onclick="triggerAction('${data.bit}', 'bit')" class="btn-press group relative w-full bg-white p-1 rounded-3xl shadow-xl shadow-blue-100 transition-all overflow-hidden border border-white">
+                        <div class="absolute inset-0 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 opacity-10"></div>
+                        <div class="relative bg-white border border-blue-50 rounded-[1.3rem] p-4 flex items-center justify-between z-10">
+                            <div class="flex items-center gap-3">
+                                <img src="${ASSETS.bit}" class="w-10 h-10 object-contain">
+                                <div class="text-right">
+                                    <span class="block font-black text-slate-800 text-lg tracking-tight">טיפ ב-Bit</span>
+                                    <span class="text-[10px] text-slate-400 font-bold">העברה מהירה</span>
+                                </div>
                             </div>
+                            <div class="bg-blue-50 w-8 h-8 rounded-full flex items-center justify-center text-blue-500 text-sm">➜</div>
                         </div>
-                        <div class="bg-blue-50 w-10 h-10 rounded-full flex items-center justify-center text-blue-500">➜</div>
-                    </div>
-                </button>`;
+                    </button>`;
+                }
+
+                if (hasPaybox) {
+                    actionHTML += `
+                    <button onclick="triggerAction('${data.link}', 'link')" class="btn-press group relative w-full bg-white p-1 rounded-3xl shadow-xl shadow-blue-100 transition-all overflow-hidden border border-white">
+                        <div class="absolute inset-0 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 opacity-5"></div>
+                        <div class="relative bg-white border border-blue-50 rounded-[1.3rem] p-4 flex items-center justify-between z-10">
+                            <div class="flex items-center gap-3">
+                                <img src="${ASSETS.paybox}" class="w-10 h-10 object-contain rounded-lg">
+                                <div class="text-right">
+                                    <span class="block font-black text-slate-800 text-lg tracking-tight">טיפ ב-PayBox</span>
+                                    <span class="text-[10px] text-slate-400 font-bold">תשלום בקבוצות</span>
+                                </div>
+                            </div>
+                            <div class="bg-blue-50 w-8 h-8 rounded-full flex items-center justify-center text-blue-500 text-sm">➜</div>
+                        </div>
+                    </button>`;
+                }
+
+                actionHTML += '</div>';
             } else {
                 actionHTML = `
                 <button onclick="triggerAction('${data.link}', 'link')" class="btn-press w-full bg-slate-900 text-white p-5 rounded-3xl flex items-center justify-between shadow-2xl shadow-slate-200 border border-slate-700">
