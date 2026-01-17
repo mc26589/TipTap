@@ -77,6 +77,12 @@
             transform: translate(-50%, 0) !important;
         }
     </style>
+
+    <!-- Vercel Web Analytics -->
+    <script>
+        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+    </script>
+    <script defer src="/_vercel/insights/script.js"></script>
 </head>
 
 <body class="min-h-screen flex items-center justify-center p-4">
@@ -251,7 +257,7 @@
 
             <div>
                 <p class="text-xs font-bold text-slate-500 mb-1 mt-2">בחר קוד אישי לניהול הכרטיס</p>
-                <input type="tel" id="fixed-pin-input" maxlength="4" placeholder="••••"
+                <input type="tel" id="fixed-pin-input" maxlength="4" placeholder="��•••"
                     class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl font-black text-center text-xl tracking-[0.5em] outline-none mb-1">
                 <p class="text-[10px] text-slate-400 leading-tight">* הקוד משמש רק לאבטחת הכרטיס שלכם ב-TipTap ואין לו
                     שום קשר לביט.</p>
